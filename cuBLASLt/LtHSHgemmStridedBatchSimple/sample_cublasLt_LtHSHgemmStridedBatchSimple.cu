@@ -27,6 +27,7 @@
  */
 
 #include <cublasLt.h>
+#include <iostream>
 
 #include "sample_cublasLt_LtHSHgemmStridedBatchSimple.h"
 #include "helpers.h"
@@ -37,11 +38,12 @@
 /// pointer mode is always host, to change it configure the appropriate matmul descriptor attribute
 /// matmul is not using cublas handle's configuration of math mode, here tensor ops are implicitly allowed
 void LtHSHgemmStridedBatchSimple(cublasLtHandle_t ltHandle,
+                                 cudaStream_t stream,
                                  cublasOperation_t transa,
                                  cublasOperation_t transb,
-                                 int m,
-                                 int n,
-                                 int k,
+                                 size_t m,
+                                 size_t n,
+                                 size_t k,
                                  const float *alpha, /* host pointer */
                                  const __half *A,
                                  int lda,
@@ -83,6 +85,54 @@ void LtHSHgemmStridedBatchSimple(cublasLtHandle_t ltHandle,
     // matmul to get the basic heuristic result internally. Downsides of this approach are that there is no way to
     // configure search preferences (e.g. disallow tensor operations or some reduction schemes) and no way to store the
     // algo for later use
+
+    cublasLtMatmulPreference_t preference = NULL;
+    checkCublasStatus(cublasLtMatmulPreferenceCreate(&preference));
+
+    // Set max workspace size allowed
+    checkCublasStatus(cublasLtMatmulPreferenceSetAttribute(
+        preference,
+    CUBLASLT_MATMUL_PREF_MAX_WORKSPACE_BYTES,
+    &workspaceSize, sizeof(workspaceSize)));
+
+    const int requestAlgoCount = 10;
+    cublasLtMatmulHeuristicResult_t heuristicResults[requestAlgoCount];
+    int returnedAlgoCount = 0;
+
+    checkCublasStatus(cublasLtMatmulAlgoGetHeuristic(
+        ltHandle,
+        operationDesc,
+        Adesc,
+        Bdesc,
+        Cdesc,
+        Cdesc,
+        preference,
+        requestAlgoCount,
+        heuristicResults,
+        &returnedAlgoCount));
+
+    if (returnedAlgoCount == 0) {
+        std::cerr << "No suitable algorithm found.\n";
+        return;
+    }
+
+    // Choose best one (usually first one)
+    auto bestAlgo = &heuristicResults[0].algo;
+
+    
+
+    // cudaEvent_t start, stop;
+    // cudaEventCreate(&start);
+    // cudaEventCreate(&stop);
+
+    // // cudaStream_t stream;
+    // cudaStreamCreate(&stream);
+    // // cublasSetStream(ltHandle, stream);
+
+    // cudaEventRecord(start, stream);
+
+    // cudaEventRecord(start,0);
+
     checkCublasStatus(cublasLtMatmul(ltHandle,
                                      operationDesc,
                                      alpha,
@@ -95,10 +145,24 @@ void LtHSHgemmStridedBatchSimple(cublasLtHandle_t ltHandle,
                                      Cdesc,
                                       C,
                                      Cdesc,
-                                     NULL,
+                                     bestAlgo,
                                      workspace,
                                      workspaceSize,
-                                     0));
+                                     stream));
+
+// cudaEventRecord(stop,0);
+    // cudaEventRecord(stop, stream);
+    // cudaEventSynchronize(stop);
+    // cudaStreamDestroy(stream);
+    // cudaEventRecord(stop,0);
+    // cudaEventSynchronize(stop);
+
+    // float milliseconds = 0;
+    // cudaEventElapsedTime(&milliseconds, start, stop);
+    // std::cout << "Kernel execution time: " << milliseconds << " ms" << std::endl;
+
+    // cudaEventDestroy(start);
+    // cudaEventDestroy(stop);
 
     // descriptors are no longer needed as all GPU work was already enqueued
     if (Cdesc) checkCublasStatus(cublasLtMatrixLayoutDestroy(Cdesc));

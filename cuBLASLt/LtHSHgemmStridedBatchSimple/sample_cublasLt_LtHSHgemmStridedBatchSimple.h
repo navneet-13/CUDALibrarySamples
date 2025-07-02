@@ -34,11 +34,12 @@
 /// pointer mode is always host, to change it configure the appropriate matmul descriptor attribute
 /// matmul is not using cublas handle's configuration of math mode, here tensor ops are implicitly allowed
 void LtHSHgemmStridedBatchSimple(cublasLtHandle_t ltHandle,
+                                 cudaStream_t stream,
                                  cublasOperation_t transa,
                                  cublasOperation_t transb,
-                                 int m,
-                                 int n,
-                                 int k,
+                                 size_t m,
+                                 size_t n,
+                                 size_t k,
                                  const float *alpha, /* host pointer */
                                  const __half *A,
                                  int lda,

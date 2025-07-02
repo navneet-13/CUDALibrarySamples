@@ -27,7 +27,7 @@
  */
 
 #include <cublasLt.h>
-
+#include <iostream>
 #include "helpers.h"
 #include "sample_cublasLt_LtFp8Matmul.h"
 
@@ -40,9 +40,9 @@
 void LtFp8Matmul(cublasLtHandle_t ltHandle,
                  cublasOperation_t transa,
                  cublasOperation_t transb,
-                 int m,
-                 int n,
-                 int k,
+                 size_t m,
+                 size_t n,
+                 size_t k,
                  const float *alpha, /* host pointer */
                  const float *a_scale, /* device pointer */
                  const __nv_fp8_e4m3 *A,
@@ -101,6 +101,12 @@ void LtFp8Matmul(cublasLtHandle_t ltHandle,
         checkCublasStatus(CUBLAS_STATUS_NOT_SUPPORTED);
     }
 
+    cudaEvent_t start, stop;
+    checkCudaStatus(cudaEventCreate(&start));
+    checkCudaStatus(cudaEventCreate(&stop));
+
+    // start timing
+    checkCudaStatus(cudaEventRecord(start, 0));
     checkCublasStatus(cublasLtMatmul(ltHandle,
                                      operationDesc,
                                      alpha,
@@ -118,6 +124,14 @@ void LtFp8Matmul(cublasLtHandle_t ltHandle,
                                      workspaceSize,
                                      0));
 
+    // stop timing
+    checkCudaStatus(cudaEventRecord(stop, 0));
+    checkCudaStatus(cudaEventSynchronize(stop));
+    float milliseconds = 0;
+    checkCudaStatus(cudaEventElapsedTime(&milliseconds, start, stop));
+    std::cout << "cublasLtMatmul took " << milliseconds << " ms" << std::endl;  
+    checkCudaStatus(cudaEventDestroy(start));
+    checkCudaStatus(cudaEventDestroy(stop));
     // descriptors are no longer needed as all GPU work was already enqueued
     if (preference) checkCublasStatus(cublasLtMatmulPreferenceDestroy(preference));
     if (Ddesc) checkCublasStatus(cublasLtMatrixLayoutDestroy(Ddesc));

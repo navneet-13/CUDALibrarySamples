@@ -33,9 +33,9 @@
 #include "helpers.h"
 
 int main() {
-    float beta = cublasLtGetVersion() >= 12 * 10000 ? 1.0 : 0.0; // can be non-zero starting from 12.0
+    float beta = cublasLtGetVersion() >= 12 * 10000 ? 0.0 : 0.0; // can be non-zero starting from 12.0
     TestBench<__nv_fp8_e4m3, __nv_fp8_e4m3, float, float, float, __nv_bfloat16> props(
-        CUBLAS_OP_T, CUBLAS_OP_N, 64, 128, 256, 2.0f, beta, 32ULL * 1024 * 1024);
+        CUBLAS_OP_T, CUBLAS_OP_N, 64, 152064, 1024, 2.0f, beta, 132ULL * 1024 * 1024);
 
     props.run([&props] {
         LtFp8Matmul(props.ltHandle,
