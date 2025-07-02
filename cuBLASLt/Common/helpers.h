@@ -103,17 +103,17 @@ inline size_t getScaleTensorSize(int inner, int outer, cublasLtMatmulMatrixScale
         return s_rows * s_cols;
     }
 
-    if (scaleMode == CUBLASLT_MATMUL_MATRIX_SCALE_OUTER_VEC_32F) {
-        return outer;
-    }
+    // if (scaleMode == CUBLASLT_MATMUL_MATRIX_SCALE_OUTER_VEC_32F) {
+    //     return outer;
+    // }
 
-    if (scaleMode == CUBLASLT_MATMUL_MATRIX_SCALE_VEC128_32F) {
-        return ceildiv(inner, 128) * outer;
-    }
+    // if (scaleMode == CUBLASLT_MATMUL_MATRIX_SCALE_VEC128_32F) {
+    //     return ceildiv(inner, 128) * outer;
+    // }
 
-    if (scaleMode == CUBLASLT_MATMUL_MATRIX_SCALE_BLK128x128_32F) {
-        return roundoff(ceildiv(inner, 128), 4) * ceildiv(outer, 128);
-    }
+    // if (scaleMode == CUBLASLT_MATMUL_MATRIX_SCALE_BLK128x128_32F) {
+    //     return roundoff(ceildiv(inner, 128), 4) * ceildiv(outer, 128);
+    // }
 
     return 0;
 }

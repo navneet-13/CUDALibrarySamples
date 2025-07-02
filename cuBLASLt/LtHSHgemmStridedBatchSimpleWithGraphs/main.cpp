@@ -44,7 +44,7 @@ int main() {
     // 130 GB = 130ULL * 1024 * 1024 * 1024 bytes
     TestBench< __half, __half, float> props(
         CUBLAS_OP_N, CUBLAS_OP_N,
-        2,         // m
+        5120,         // m
         5120,       // n
         5120,         // k
         2.0f,         // alpha
